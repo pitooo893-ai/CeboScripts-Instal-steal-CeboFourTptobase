@@ -1,0 +1,260 @@
+--========================
+-- DEREK | DANIEL - INSTANT STEAL
+--========================
+
+local whitelist = {
+	"RogerSolizFranco4",
+    "",
+    "",
+    "",
+    "",
+}
+
+local function isWhitelisted(name)
+	for _, v in ipairs(whitelist) do
+		if string.lower(v) == string.lower(name) then
+			return true
+		end
+	end
+	return false
+end
+
+local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+if not isWhitelisted(player.Name) then
+	player:Kick("NO ESTAS PERMITIDO POR EL OWNER")
+	return
+end
+
+if _G.NexHubInstantStealLoaded then return end
+_G.NexHubInstantStealLoaded = true
+
+-- ===========================
+-- Variables
+-- ===========================
+local pos1, pos2 = nil, nil
+local beam1, beam2
+local part1, part2
+
+local targetPositions = {
+	Vector3.new(-481.88, -3.79, 138.02),
+	Vector3.new(-481.75, -3.79, 89.18),
+	Vector3.new(-481.82, -3.79, 30.95),
+	Vector3.new(-481.75, -3.79, -17.79),
+	Vector3.new(-481.80, -3.79, -76.06),
+	Vector3.new(-481.72, -3.79, -124.70),
+	Vector3.new(-337.45, -3.85, -124.72),
+	Vector3.new(-337.37, -3.85, -76.07),
+	Vector3.new(-337.46, -3.79, -17.72),
+	Vector3.new(-337.41, -3.79, 30.92),
+	Vector3.new(-337.32, -3.79, 89.02),
+	Vector3.new(-337.27, -3.79, 137.90),
+	Vector3.new(-337.45, -3.79, 196.29),
+	Vector3.new(-337.37, -3.79, 244.91),
+	Vector3.new(-481.72, -3.79, 196.21),
+	Vector3.new(-481.76, -3.79, 244.92)
+}
+
+-- ===========================
+-- UI CUADRADA (140x160) y BOTONES 0.8x40
+-- ===========================
+local gui = Instance.new("ScreenGui")
+gui.Name = "DerekDanielUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 140, 0, 160)
+frame.Position = UDim2.new(0.05, 0, 0.35, 0)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(120, 80, 255)
+stroke.Thickness = 1.2
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -10, 0, 25)
+title.Position = UDim2.fromOffset(5, 5)
+title.BackgroundTransparency = 1
+title.Text = "CeboScripts🚀 | Sexo anal"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 12
+title.TextColor3 = Color3.fromRGB(200, 190, 255)
+title.TextXAlignment = Enum.TextXAlignment.Center
+
+local status = Instance.new("TextLabel", frame)
+status.Size = UDim2.new(1, -10, 0, 20)
+status.Position = UDim2.fromOffset(5, 35)
+status.BackgroundTransparency = 1
+status.Text = "Waiting for Steal..."
+status.Font = Enum.Font.Gotham
+status.TextSize = 10
+status.TextColor3 = Color3.fromRGB(170, 170, 170)
+status.TextXAlignment = Enum.TextXAlignment.Center
+
+task.spawn(function()
+	while true do
+		TweenService:Create(status, TweenInfo.new(1), {TextTransparency = 0.5}):Play()
+		task.wait(1)
+		TweenService:Create(status, TweenInfo.new(1), {TextTransparency = 0}):Play()
+		task.wait(1)
+	end
+end)
+
+local function makeButton(text, y, color)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(0.8, 0, 0, 40)
+	b.Position = UDim2.new(0.1, 0, 0, y)
+	b.BackgroundColor3 = color
+	b.Text = text
+	b.Font = Enum.Font.GothamMedium
+	b.TextSize = 11
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.AutoButtonColor = false
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,6)
+	return b
+end
+
+local function pressAnim(button)
+	local os = button.Size
+	local op = button.Position
+	TweenService:Create(button, TweenInfo.new(0.08), {
+		Size = os - UDim2.fromOffset(4,3),
+		Position = op + UDim2.fromOffset(2,1)
+	}):Play()
+	task.wait(0.08)
+	TweenService:Create(button, TweenInfo.new(0.12), {
+		Size = os,
+		Position = op
+	}):Play()
+end
+
+-- ===========================
+-- SONIDO ORIGINAL
+-- ===========================
+local OnSound = Instance.new("Sound")
+OnSound.SoundId = "rbxassetid://8745692251"
+OnSound.Volume = 1
+OnSound.Parent = frame
+
+-- ===========================
+-- BOTONES
+-- ===========================
+local btnSave = makeButton("GUARDAR POSICIÓN", 55, Color3.fromRGB(80,120,255))
+local btnRemove = makeButton("QUITAR POSICIÓN", 105, Color3.fromRGB(220,70,70))
+
+-- ===========================
+-- BEAMS
+-- ===========================
+local function createBeam(position, color, index)
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+	local part = Instance.new("Part", workspace)
+	part.Size = Vector3.new(1,1,1)
+	part.Anchored = true
+	part.CanCollide = false
+	part.Transparency = 1
+	part.CFrame = CFrame.new(position)
+
+	local a0 = Instance.new("Attachment", part)
+	local a1 = Instance.new("Attachment", char.HumanoidRootPart)
+
+	local beam = Instance.new("Beam", workspace)
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	beam.Width0 = 0.12
+	beam.Width1 = 0.12
+	beam.FaceCamera = true
+	beam.Color = ColorSequence.new(color)
+
+	if index == 1 then
+		if beam1 then beam1:Destroy() end
+		if part1 then part1:Destroy() end
+		beam1, part1 = beam, part
+	else
+		if beam2 then beam2:Destroy() end
+		if part2 then part2:Destroy() end
+		beam2, part2 = beam, part
+	end
+end
+
+-- ===========================
+-- GUARDAR POSICIÓN
+-- ===========================
+btnSave.MouseButton1Click:Connect(function()
+	pressAnim(btnSave)
+	OnSound:Play()
+
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		pos1 = hrp.CFrame
+		createBeam(pos1.Position, Color3.fromRGB(0,170,255), 1)
+		status.Text = "Posición guardada"
+	end
+end)
+
+-- ===========================
+-- QUITAR POSICIÓN
+-- ===========================
+btnRemove.MouseButton1Click:Connect(function()
+	pressAnim(btnRemove)
+	pos1 = nil
+	if beam1 then beam1:Destroy() beam1 = nil end
+	if part1 then part1:Destroy() part1 = nil end
+	status.Text = "Posición eliminada"
+end)
+
+-- ===========================
+-- POSICIÓN AUTOMÁTICA
+-- ===========================
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local closestDist = math.huge
+			local closestPos
+			for _, v in ipairs(targetPositions) do
+				local dist = (hrp.Position - v).Magnitude
+				if dist < closestDist then
+					closestDist = dist
+					closestPos = v
+				end
+			end
+			if closestPos then
+				pos2 = CFrame.new(closestPos)
+				createBeam(pos2.Position, Color3.fromRGB(255,140,0), 2)
+			end
+		end
+	end
+end)
+
+-- ===========================
+-- SISTEMA TP ORIGINAL
+-- ===========================
+ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt, who)
+	if who ~= player then return end
+	if prompt.Name ~= "Steal" and prompt.ActionText ~= "Steal" then return end
+
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		local carpet = backpack:FindFirstChild("Flying Carpet")
+		if carpet and player.Character and player.Character:FindFirstChild("Humanoid") then
+			player.Character.Humanoid:EquipTool(carpet)
+		end
+	end
+
+	if pos1 then hrp.CFrame = pos1 end
+	if pos2 then task.wait(0.05); hrp.CFrame = pos2 end
+end)
